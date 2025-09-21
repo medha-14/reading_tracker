@@ -1,119 +1,128 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import Nav from '../components/Nav';
 import { BASE_URL } from '../globals';
 
-export default function Signup(props) {
+export default function Signup() {
+    const navigate = useNavigate();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [reentry, setReentry] = useState('');
-    const [unLength, setUnLength] = useState('');
-    const [unEmoji, setUnEmoji] = useState('');
-    const [pdCheck, setpdCheck] = useState('');
-    const [matchEmoji, setMatchEmoji] = useState('');
-    const [pdLength, setPdLength] = useState('');
-    const [lengthEmoji, setLengthEmoji] = useState('');
-    const [checkDiv, setCheckDiv] = useState('checkDiv');
-    const [alertDisplay, setAlert] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const reset = () => {
-        setUsername('');
-        setPassword('');
-        setReentry('');
-        setUnLength('');
-        setUnEmoji('');
-        setpdCheck('');
-        setMatchEmoji('');
-        setPdLength('');
-        setLengthEmoji('');
-        setCheckDiv('checkDiv');
-        setAlert('');
-    };
+    const unOk = username.length >= 7;
+    const pwOk = password.length >= 7;
+    const match = password && password === reentry;
+    const canSubmit = unOk && pwOk && match;
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (password === reentry && username.length > 6 && password.length > 6) {
-            let response = await axios.get(`${BASE_URL}existinguser/${username}`);
-            if (response.data) {
-                setAlert(
-                    <div className="alertDisplay">
-                        <div className="alert">
-                            <p>That username already exists. Please login or choose a different username</p>
-                            <button onClick={() => props.history.push(`/login`)}>Login</button>
-                            <button onClick={reset}>Reset fields</button>
-                        </div>
-                    </div>
-                );
+        if (!canSubmit) {
+            setError('Please fix the requirements below before submitting.');
+            return;
+        }
+        setLoading(true);
+        setError('');
+        try {
+            const res = await axios.get(`${BASE_URL}existinguser/${username}`);
+            if (res.data) {
+                setError('That username is taken. Please choose another or log in.');
             } else {
-            await axios.post(`${BASE_URL}newuser`, 
-                {
-                    username: username,
-                    password: password,
-                    books: []
-                }
-            );
-            props.history.push(`/${username}/bookshelf`);
-            };
-        } else {
-            setCheckDiv('checkAlert');
-        };
+                await axios.post(`${BASE_URL}newuser`, { username, password, books: [] });
+                navigate(`/${username}/bookshelf`);
+            }
+        } catch {
+            setError('Something went wrong. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    useEffect(() => {
-        if (username) {
-            username.length > 6 ? setUnLength('unLong') : setUnLength('unShort');
-            unLength === 'unLong' ? setUnEmoji('✅') : setUnEmoji('🚫')
-        };
-        if (password || reentry) {
-            password === reentry ? setpdCheck('match') : setpdCheck('mismatch');
-            pdCheck === 'match' ? setMatchEmoji('✅') : setMatchEmoji('🚫');
-            password.length > 6 ? setPdLength('pdLong') : setPdLength('pdShort');
-            pdLength === 'pdLong' ? setLengthEmoji('✅') : setLengthEmoji('🚫');
-        };
-    }, [
-        password, 
-        reentry, 
-        matchEmoji, 
-        pdCheck, 
-        pdLength,
-        lengthEmoji,
-        username,
-        unLength,
-        unEmoji
-    ]);
-
     return (
-        <div>
+        <div className="page-wrapper">
             <Nav />
-            <form onSubmit={handleSubmit}>
-                <h2>Sign up for an account here!</h2>
-                <label>Username:</label>
-                <input 
-                    onChange={(e) => setUsername(e.target.value)} 
-                    type='text' 
-                    placeholder='username' 
-                    value={username} 
-                />
-                <label>Password:</label>
-                <input 
-                    onChange={(e) => setPassword(e.target.value)}
-                    type='password' 
-                    placeholder='password' 
-                    value={password}
-                />
-                <label>Re-enter Password:</label>
-                <input 
-                    onChange={(e) => setReentry(e.target.value)}
-                    type='password' 
-                    placeholder='re-enter password'
-                    value={reentry} />
-                <div className={checkDiv}>
-                    <p className={unLength}>{unEmoji} Username must be at least 7 characters</p>
-                    <p className={pdLength}>{lengthEmoji} Password must be at least 7 characters</p>
-                    <p className={pdCheck}>{matchEmoji} Passwords must match</p>
+            <div className="auth-page">
+                <div className="auth-card">
+                    <h2 className="auth-title">Create account 🌱</h2>
+                    <p className="auth-subtitle">
+                        Start building your personal bookshelf today.
+                    </p>
+
+                    {error && (
+                        <div className="alert alert-error">
+                            <span>⚠</span> {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-group">
+                            <label className="form-label">Username</label>
+                            <input
+                                id="signup-username"
+                                className="form-input"
+                                type="text"
+                                placeholder="At least 7 characters"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                autoComplete="username"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Password</label>
+                            <input
+                                id="signup-password"
+                                className="form-input"
+                                type="password"
+                                placeholder="At least 7 characters"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                autoComplete="new-password"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Confirm Password</label>
+                            <input
+                                id="signup-confirm"
+                                className="form-input"
+                                type="password"
+                                placeholder="Re-enter password"
+                                value={reentry}
+                                onChange={(e) => setReentry(e.target.value)}
+                                autoComplete="new-password"
+                            />
+                        </div>
+
+                        <ul className="validation-list">
+                            <li className={unOk ? 'valid' : ''}>Username is at least 7 characters</li>
+                            <li className={pwOk ? 'valid' : ''}>Password is at least 7 characters</li>
+                            <li className={match ? 'valid' : ''}>Passwords match</li>
+                        </ul>
+
+                        <button
+                            id="signup-submit-btn"
+                            type="submit"
+                            className="btn btn-primary btn-full btn-lg"
+                            disabled={loading}
+                        >
+                            {loading ? 'Creating account…' : 'Create Account'}
+                        </button>
+                    </form>
+
+                    <p style={{ marginTop: '28px', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                        Already have an account?{' '}
+                        <span
+                            style={{ color: 'var(--primary-light)', cursor: 'pointer', fontWeight: 600 }}
+                            onClick={() => navigate('/login')}
+                        >
+                            Log in
+                        </span>
+                    </p>
                 </div>
-                <button type='submit'>Sign up!</button>
-            </form>
-            {alertDisplay}
+            </div>
         </div>
     );
-};
+}

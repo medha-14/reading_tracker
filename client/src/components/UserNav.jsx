@@ -1,13 +1,27 @@
-import React from 'react'
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-export default function UserNav(props) {
+export default function UserNav({ username }) {
+    const navigate = useNavigate();
     return (
-        <div className='userNavBar'>
-            <Link to={`/${props.username}/newbook`} className='navLink'>New Book</Link>
-            <Link to={`/${props.username}/bookshelf`} className='navLink'>Bookshelf</Link>
-            <p>Hello, {props.username}!</p>
-            <Link to={'/'} className='logout'>Logout</Link>
-        </div>
+        <nav className="user-nav">
+            <Link to="/" className="navbar-logo" style={{ fontSize: '1.15rem' }}>
+                🌿 Bookly
+            </Link>
+            <div className="user-nav-links">
+                <Link to={`/${username}/bookshelf`} className="nav-link-btn">
+                    My Shelf
+                </Link>
+                <Link to={`/${username}/newbook`} className="btn btn-primary btn-sm">
+                    + Add Book
+                </Link>
+                <button
+                    className="nav-link-btn"
+                    onClick={() => navigate('/')}
+                    style={{ color: 'var(--text-muted)' }}
+                >
+                    Logout
+                </button>
+            </div>
+        </nav>
     );
-};
+}
